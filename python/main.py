@@ -165,7 +165,9 @@ Paste JSON here:<p/><textarea name=json cols=80 rows=24></textarea>
                 # more clever than just picking a random move.
 
                 start = time.time()
-                move = MinMax(g._board["Pieces"], g.Next(), valid_moves, 1, g, start)
+                #move = MinMax(g._board["Pieces"], g.Next(), valid_moves, 1, g, start)
+                best = MinMax2(g, g.Next(), 3)
+                move = best[1]
     		self.response.write(PrettyMove(move))  # E3とか出してる
 
 app = webapp2.WSGIApplication([
@@ -221,21 +223,34 @@ def MinMax(board, as1or2, valid_moves, depth, g, start):
                 return min_point
 
 
-"""
-def MinMax2(g, as1or2):
-        depth_moves = {} #{1:{move1: [g, -3, move], move2: [move]},2:{move},3:[],...}
-        
-        rest_time = 10
-        while rest_time > 4.0:
-                start = time.time()
-                depth = 1
-                valid_moves = g.ValidMoves()
-                for move in valid_moves:
-                        g1 = g
-                        g1.NextBoardPosition(move)
-                        point = point_of_board(g1, as1or2)
-                        depth_moves[depth][move] = [g1, point, move]
-"""
+
+def MinMax2(g, as1or2, depth):
+        if depth == 0:
+                score = point_of_board(g._board["Pieces"], as1or2)
+                return score
+        next_moves = g.ValidMoves()
+        next_valid_moves = []
+        for move in next_moves:
+                g1 = g
+                g1.NextBoardPosition(move)
+                next_valid_moves.append([g1, move])
+        if len(next_moves) == 0:
+                score = point_of_board(g._board["Pieces"], as1or2)
+                return score
+
+        best = False
+        for banmen in next_valid_moves:
+                result = MinMax2(banmen[0], as1or2, depth-1)
+                if best:
+                        if depth % 2 == 1 and best[0] < result:
+                                best = [result, banmen[1]]
+                        elif depth % 2 == 0 and best[0] > result:
+                                best = [result, banmen[1]]
+                else:
+                        best = [result, banmen[1]]
+        return best
+                              
+
 
 def max_of_points(points_and_moves):
         max_point = -1000
@@ -251,6 +266,20 @@ def min_of_points(points_and_moves):
                         min_point = point
         return min_point
 
+def score_by_number(board, as1or2):
+        num1 = 0
+        num2 = 0
+        for i in board:
+                for j in i:
+                        if j == 1:
+                                num1 += 1
+                        elif j == 2:
+                                num2 += 1
+        if as1or2 == 1:
+                return num1 - num2
+        else:
+                return num2 - num1
+
 """
 pos_point = [
         [120, -20, 20, 5, 5, 20, -20, 120],
@@ -264,13 +293,13 @@ pos_point = [
         ]
 """
 pos_point = [
-        [ 30, -12,  0, -1, -1,  0, -12,  30],
+        [ 40, -12,  0, -1, -1,  0, -12,  40],
         [-12, -15, -3, -3, -3, -3, -15, -12],
         [  0,  -3,  0, -1, -1,  0,  -3,   0],
         [ -1,  -3, -1, -1, -1, -1,  -3,  -1],
         [ -1,  -3, -1, -1, -1, -1,  -3,  -1],
         [  0,  -3,  0, -1, -1,  0,  -3,   0],
         [-12, -15, -3, -3, -3, -3, -15, -12],
-        [ 30, -12,  0, -1, -1,  0, -12,  30]
+        [ 40, -12,  0, -1, -1,  0, -12,  40]
         ]
 
