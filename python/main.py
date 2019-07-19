@@ -6,6 +6,8 @@ import json
 import logging
 import random
 import webapp2
+import time
+import sys
 
 # Reads json description of the board and provides simple interface.
 class Game:
@@ -161,9 +163,114 @@ Paste JSON here:<p/><textarea name=json cols=80 rows=24></textarea>
                 # TO STEP STUDENTS:
                 # You'll probably want to change how this works, to do something
                 # more clever than just picking a random move.
-	    	move = random.choice(valid_moves)
-    		self.response.write(PrettyMove(move))
+
+                start = time.time()
+                move = MinMax(g._board["Pieces"], g.Next(), valid_moves, 1, g, start)
+    		self.response.write(PrettyMove(move))  # E3とか出してる
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler)
 ], debug=True)
+
+
+def point_of_board(board, as1or2):
+        player1point = 0
+        player2point = 0
+        for x in range(1, 9):
+                for y in range(1, 9):
+                        if board[y-1][x-1] == 1:
+                                player1point += pos_point[y-1][x-1]
+                        elif board[x-1][y-1] == 2:
+                                player2point += pos_point[y-1][x-1]
+        if as1or2 == 1:
+                return player1point - player2point
+        else:
+                return player2point - player1point
+
+
+def MinMax(board, as1or2, valid_moves, depth, g, start):
+        now = time.time()
+        #if now - start > 10.0:
+        #        return
+        moves_and_points = {}
+        for move in valid_moves:
+                board1 = board
+                g1 = g
+                g1.NextBoardPosition(move)
+                next_valid_moves = g1.ValidMoves()
+                if len(next_valid_moves) > 0:
+                        if depth == 4:
+                                point = point_of_board(g1._board["Pieces"], as1or2)
+                        else:
+                                point = MinMax(g1._board["Pieces"], as1or2, next_valid_moves, depth+1, g1, start)
+                        moves_and_points[point] = move
+                else:
+                        if depth == 1:
+                                return -10000
+                        else:
+                                return 10000
+
+        if depth == 1:
+                max_point = max_of_points(moves_and_points)
+                return moves_and_points[max_point]
+        elif depth % 2 == 1:
+                max_point = max_of_points(moves_and_points)
+                return max_point
+        else:
+                min_point = min_of_points(moves_and_points)
+                return min_point
+
+
+"""
+def MinMax2(g, as1or2):
+        depth_moves = {} #{1:{move1: [g, -3, move], move2: [move]},2:{move},3:[],...}
+        
+        rest_time = 10
+        while rest_time > 4.0:
+                start = time.time()
+                depth = 1
+                valid_moves = g.ValidMoves()
+                for move in valid_moves:
+                        g1 = g
+                        g1.NextBoardPosition(move)
+                        point = point_of_board(g1, as1or2)
+                        depth_moves[depth][move] = [g1, point, move]
+"""
+
+def max_of_points(points_and_moves):
+        max_point = -1000
+        for point in points_and_moves:
+                if point > max_point:
+                        max_point = point
+        return max_point
+
+def min_of_points(points_and_moves):
+        min_point = 1000
+        for point in points_and_moves:
+                if point < min_point:
+                        min_point = point
+        return min_point
+
+"""
+pos_point = [
+        [120, -20, 20, 5, 5, 20, -20, 120],
+        [-20, 40, -5, -5, -5, -5, -40, -20],
+        [20, -5, 15, 3, 3, 15, -5, 20],
+        [5, -5, 3, 3, 3, 3, -5, 5],
+        [5, -5, 3, 3, 3, 3, -5, 5],
+        [20, -5, 15, 3, 3, 15, -5, 20],
+        [-20, 40, -5, -5, -5, -5, -40, -20],
+        [120, -20, 20, 5, 5, 20, -20, 120]
+        ]
+"""
+pos_point = [
+        [ 30, -12,  0, -1, -1,  0, -12,  30],
+        [-12, -15, -3, -3, -3, -3, -15, -12],
+        [  0,  -3,  0, -1, -1,  0,  -3,   0],
+        [ -1,  -3, -1, -1, -1, -1,  -3,  -1],
+        [ -1,  -3, -1, -1, -1, -1,  -3,  -1],
+        [  0,  -3,  0, -1, -1,  0,  -3,   0],
+        [-12, -15, -3, -3, -3, -3, -15, -12],
+        [ 30, -12,  0, -1, -1,  0, -12,  30]
+        ]
+
