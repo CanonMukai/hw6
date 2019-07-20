@@ -12,10 +12,12 @@ import sys
 # Reads json description of the board and provides simple interface.
 class Game:
 	# Takes json or a board directly.
-	def __init__(self, body=None, board=None):
+	#def __init__(self, body=None, board=None):
+        def __init__(self, body=None, board=None, stage=None):
                 if body:
 		        game = json.loads(body)
                         self._board = game["board"]
+                        self._stage = game["history"]
                 else:
                         self._board = board
 
@@ -28,6 +30,9 @@ class Game:
 	# Returns who plays next.
 	def Next(self):
 		return self._board["Next"]
+
+        def Stage(self):
+                return len(self._stage)
 
 	# Returns the array of valid moves for next player.
 	# Each move is a dict
@@ -166,7 +171,8 @@ Paste JSON here:<p/><textarea name=json cols=80 rows=24></textarea>
 
                 start = time.time()
                 #move = MinMax(g._board["Pieces"], g.Next(), valid_moves, 1, g, start)
-                best = MinMax2(g, g.Next(), 3)
+                stage = g._stage
+                best = MinMax2(g, g.Next(), 3, stage)
                 move = best[1]
     		self.response.write(PrettyMove(move))  # E3とか出してる
 
@@ -224,9 +230,14 @@ def MinMax(board, as1or2, valid_moves, depth, g, start):
 
 
 
-def MinMax2(g, as1or2, depth):
+def MinMax2(g, as1or2, depth, stage):
+        if stage > 40:
+                k = 2
+        else:
+                k = 0
+                
         if depth == 0:
-                score = point_of_board(g._board["Pieces"], as1or2)
+                score = point_of_board(g._board["Pieces"], as1or2) + score_by_number(g._board["Pieces"], as1or2) * k
                 return score
         next_moves = g.ValidMoves()
         next_valid_moves = []
@@ -235,12 +246,12 @@ def MinMax2(g, as1or2, depth):
                 g1.NextBoardPosition(move)
                 next_valid_moves.append([g1, move])
         if len(next_moves) == 0:
-                score = point_of_board(g._board["Pieces"], as1or2)
+                score = point_of_board(g._board["Pieces"], as1or2) + score_by_number(g._board["Pieces"], as1or2) * k
                 return score
 
         best = False
         for banmen in next_valid_moves:
-                result = MinMax2(banmen[0], as1or2, depth-1)
+                result = MinMax2(banmen[0], as1or2, depth-1, stage)
                 if best:
                         if depth % 2 == 1 and best[0] < result:
                                 best = [result, banmen[1]]
