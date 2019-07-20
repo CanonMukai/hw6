@@ -147,8 +147,11 @@ Paste JSON here:<p/><textarea name=json cols=80 rows=24></textarea>
 """)
           return
         else:
+          start = time.time()
           g = Game(self.request.get('json'))
           self.pickMove(g)
+          end = time.time()
+          logging.info("all time = %3.4f" % (end-start))
 
     def post(self):
     	# Reads JSON representation of the board and store as the object.
@@ -163,16 +166,26 @@ Paste JSON here:<p/><textarea name=json cols=80 rows=24></textarea>
     	if len(valid_moves) == 0:
     		# Passes if no valid moves.
     		self.response.write("PASS")
+        elif len(valid_moves) == 1:
+                move = valid_moves[0]
+                self.response.write(PrettyMove(move))
     	else:
     		# Chooses a valid move randomly if available.
                 # TO STEP STUDENTS:
                 # You'll probably want to change how this works, to do something
                 # more clever than just picking a random move.
 
-                start = time.time()
+                
                 #move = MinMax(g._board["Pieces"], g.Next(), valid_moves, 1, g, start)
+                #if len(valid_moves) >
+                depth = depth_dict[len(valid_moves)]
+                fixed_depth = depth
                 stage = g._stage
-                best = MinMax2(g, g.Next(), 3, stage)
+                logging.info("length = %d" % len(valid_moves))
+                start = time.time()
+                best = MinMax2(g, g.Next(), depth, stage, fixed_depth)
+                end = time.time()
+                #logging.info("length = %d, time = %2.4f" % (len(valid_moves), end-start))
                 move = best[1]
     		self.response.write(PrettyMove(move))  # E3とか出してる
 
@@ -180,6 +193,9 @@ app = webapp2.WSGIApplication([
     ('/', MainHandler)
 ], debug=True)
 
+
+# change depth by the number of valid_moves 
+depth_dict = {1:1, 2:8, 3:6, 4:6, 5:5, 6:4, 7:4, 8:4, 9:4, 10:4, 11:4, 12:3, 13:3, 14:3, 15:5, 16:3, 17:3, 18:3}
 
 def point_of_board(board, as1or2):
         player1point = 0
@@ -195,7 +211,7 @@ def point_of_board(board, as1or2):
         else:
                 return player2point - player1point
 
-
+"""
 def MinMax(board, as1or2, valid_moves, depth, g, start):
         now = time.time()
         #if now - start > 10.0:
@@ -227,11 +243,11 @@ def MinMax(board, as1or2, valid_moves, depth, g, start):
         else:
                 min_point = min_of_points(moves_and_points)
                 return min_point
+"""
 
 
-
-def MinMax2(g, as1or2, depth, stage):
-        if stage > 40:
+def MinMax2(g, as1or2, depth, stage, fixed_depth):
+        if stage > 54:
                 k = 2
         else:
                 k = 0
@@ -251,11 +267,11 @@ def MinMax2(g, as1or2, depth, stage):
 
         best = False
         for banmen in next_valid_moves:
-                result = MinMax2(banmen[0], as1or2, depth-1, stage)
+                result = MinMax2(banmen[0], as1or2, depth-1, stage, fixed_depth)
                 if best:
-                        if depth % 2 == 1 and best[0] < result:
+                        if (fixed_depth - depth) % 2 == 0 and best[0] < result:
                                 best = [result, banmen[1]]
-                        elif depth % 2 == 0 and best[0] > result:
+                        elif (fixed_depth - depth) % 2 == 1 and best[0] > result:
                                 best = [result, banmen[1]]
                 else:
                         best = [result, banmen[1]]
@@ -304,13 +320,13 @@ pos_point = [
         ]
 """
 pos_point = [
-        [ 40, -12,  0, -1, -1,  0, -12,  40],
+        [ 30, -12,  0, -1, -1,  0, -12,  30],
         [-12, -15, -3, -3, -3, -3, -15, -12],
         [  0,  -3,  0, -1, -1,  0,  -3,   0],
         [ -1,  -3, -1, -1, -1, -1,  -3,  -1],
         [ -1,  -3, -1, -1, -1, -1,  -3,  -1],
         [  0,  -3,  0, -1, -1,  0,  -3,   0],
         [-12, -15, -3, -3, -3, -3, -15, -12],
-        [ 40, -12,  0, -1, -1,  0, -12,  40]
+        [ 30, -12,  0, -1, -1,  0, -12,  30]
         ]
 
